@@ -38,7 +38,7 @@ en el pizarrón. Ideal: `bit.ly/nolineal-dia1`.
 ### Paso 4 (opcional) — badge en el README del repo
 
 ```markdown
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USUARIO/REPO/blob/main/colab/Dia1_Pendulos_NoLineal.ipynb)
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USUARIO/REPO/blob/main/Dia1_Pendulos_NoLineal.ipynb)
 ```
 
 ---
