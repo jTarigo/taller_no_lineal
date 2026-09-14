@@ -5,7 +5,7 @@ de física de secundaria. Los participantes **no instalan nada**: abren un link.
 
 | Día | Cuaderno | Contenido |
 |---|---|---|
-| 1 | `Dia1_Pendulos_NoLineal.ipynb` | Péndulo lineal y exacto, espacio de fases, péndulo magnético, cuencas de atracción |
+| 1 | `Dia1_Pendulos_NoLineal.ipynb` | Péndulo lineal y exacto, espacio de fases, péndulo magnético, sensibilidad a condiciones iniciales |
 | 2 | `Dia2_MapaLogistico.ipynb` | Mapa logístico, telaraña, diagrama de bifurcación, constante de Feigenbaum |
 | 3 | `Dia3_Lorenz.ipynb` | Sistema de Lorenz, atractor extraño, exponente de Lyapunov, mapa de retorno |
 
@@ -38,7 +38,7 @@ en el pizarrón. Ideal: `bit.ly/nolineal-dia1`.
 ### Paso 4 (opcional) — badge en el README del repo
 
 ```markdown
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USUARIO/REPO/blob/main/Dia1_Pendulos_NoLineal.ipynb)
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USUARIO/REPO/blob/main/colab/Dia1_Pendulos_NoLineal.ipynb)
 ```
 
 ---
@@ -141,68 +141,49 @@ wifi del congreso, el taller sigue.**
 Estas decisiones se tomaron después de verificar numéricamente los resultados;
 quedan documentadas por si hay que retocar algo.
 
-**Día 1 — fluidez de los deslizadores (revisión).** El cuello de botella era el
-espacio de fases: integraba 6 trayectorias en bucles de Python separados con
-dt=0.005 sobre hasta 200 s (~240.000 pasos, ~2.5 s por movimiento). Dos arreglos
-medidos: (a) `rk4_varias()` integra las 6 juntas en un array (2,6) → 2.2×;
-(b) paso a dt=0.02, cuyo error contra dt=0.001 en régimen caótico es 1.5×10⁻⁶,
-irrelevante para dibujar → 4×. Combinados: **0.28 s en vez de 2.49 s (9×)**.
-Además se submuestrean los puntos al graficar y se aligeró el `quiver` (21×15).
-Todos los deslizadores usan `continuous_update=False`, así que recalculan al
-soltar, no al arrastrar.
+**Día 1 — alcance.** El cuaderno termina en la sensibilidad a las condiciones
+iniciales (sección 6.1). Se quitaron los mapas de cuencas, los paneles de
+rozamiento, el exponente de incertidumbre y el experimento de paso de integración.
 
-**Día 1 — péndulo magnético: legibilidad vs fractalidad.** Son dos caras de la
-misma cantidad física (cuánto explora el transitorio antes de asentarse) y no
-existe un juego de parámetros que dé ambas: se escaneó k ∈ {0.5, 1.0},
-d ∈ {0.15, 0.25, 0.40}, b ∈ {0.10, 0.15, 0.20} sin candidatos. La solución es
-pedagógica, no numérica: mostrar la transición como contenido.
+**Día 1 — fluidez de los deslizadores.** Costos medidos por movimiento:
 
-- **Mapa principal: b = 0.20**, legible (52 % de píxeles "interiores"), tres
-  cuencas claras. Enseña atractor y cuenca sin ruido visual.
-- **Tres paneles b = 0.30 / 0.15 / 0.06** para ver cómo la zona de mezcla se come
-  el plano al bajar el rozamiento.
-
-**Día 1 — exponente de incertidumbre.** Es la respuesta rigurosa a "¿son fractales
-las fronteras?" (método de Grebogi–McDonald–Ott–Yorke 1983): se perturban puntos
-al azar en ε y se mide la fracción que cambia de destino; f(ε) ~ ε^α y D = 2 − α.
-Medido con 2500–8000 puntos y perturbación isótropa:
-
-| b | α | D = 2 − α |
+| | antes | ahora |
 |---|---|---|
-| 0.30 | 0.84 | 1.16 |
-| 0.20 | 0.68 | 1.32 |
-| 0.15 | 0.49 | 1.51 |
-| 0.10 | 0.20–0.23 | 1.77–1.80 |
+| Sección 5, tmax=40 (default) | ~1.0 s | **0.042 s** |
+| Sección 5, tmax=150 (máximo) | ~2.7 s | **0.14 s** |
+| Sección 6.1, b=0.10 (default) | ~3.0 s | **0.15 s** |
+| Sección 6.1, b=0.30 | ~3.0 s | **0.057 s** |
 
-**Todas las fronteras son fractales (D > 1), incluida la de b = 0.30 que a simple
-vista parece lisa.** Lo que cambia con b no es *si* hay fractalidad sino qué
-porción del plano ocupa la zona enredada.
+Tres cambios lo consiguen:
 
-**Día 1 — el experimento de dt usa b = 0.06, no 0.20.** Esto importa y se verificó
-explícitamente:
+1. **Sección 5 vectorizada.** `rk4_varias()` integra las 6 trayectorias juntas en
+   un array (2,6) en vez de 6 bucles separados.
+2. **Paso dt = 0.03** en el retrato de fases. Verificado con conservación de
+   energía (b=0, A=0, tmax=150): deriva relativa 2.0×10⁻⁵, invisible al dibujar.
+   El test de "error contra dt pequeño" NO sirve en régimen caótico — da
+   resultados no monótonos porque las trayectorias divergen por definición; la
+   conservación de energía es el criterio correcto. El tope del deslizador de
+   tiempo bajó de 200 s a 150 s.
+3. **Sección 6.1 con aritmética escalar y corte temprano.** Las funciones
+   `paso_iman` / `soltar_dos` usan floats sueltos en vez de arrays de numpy: para
+   dos trayectorias es **20× más rápido** (numpy tiene un costo fijo por operación
+   que sólo se amortiza con miles de datos). Además la integración corta apenas
+   ambos péndulos se detuvieron, en vez de llegar siempre a los 500 s.
 
-| b | dt .05 vs .02 | dt .02 vs .01 | ¿converge? |
-|---|---|---|---|
-| 0.20 | 0.15–0.36 % | **0.00 %** | sí, totalmente |
-| 0.10 | 4.9 % | 0.20 % | casi |
-| 0.06 | 26.5 % | **7.3 %** | no |
-
-Con b = 0.20 el cálculo converge al refinar el paso: la discrepancia con dt=0.05
-es simple error de integración y presentarla como "sensibilidad" sería incorrecto.
-Con b = 0.06 no converge, y ahí sí el efecto es la limitación de fondo que ata con
-la anécdota de Lorenz del Día 3. El cuaderno muestra ambos renglones y explica la
-diferencia entre *error numérico que se corrige* y *limitación irreducible*.
+**Día 1 — la física no cambió con las optimizaciones.** Verificado tras los
+cambios: el punto (0.30, −1.40) con b=0.10 sigue cambiando de imán en las **seis**
+escalas de δ (10⁻¹ a 10⁻⁶); el control cerca de un imán (0, 1) sigue siendo
+estable en las tres escalas probadas; con b=0.20 la sensibilidad desaparece (6/6
+coinciden); el período elíptico sigue coincidiendo con el medido con error 10⁻¹¹.
 
 **Día 1 — condición inicial de la sección 6.1.** Con b = 0.20 los únicos puntos
 sensibles hasta δ=10⁻⁶ sobre la grilla del deslizador (paso 0.05) caen en x = 0,
 que es eje de simetría y por lo tanto degenerado. Se usa **(0.30, −1.40) con
-b = 0.10**, verificado: cambia de imán en las seis escalas de δ y está lejos del
-eje. La sección tiene además un deslizador de rozamiento para que se vea que con
-b = 0.30 la sensibilidad desaparece.
+b = 0.10**. La sección tiene un deslizador de rozamiento para mostrar que con
+b = 0.30 la sensibilidad desaparece: el péndulo se frena antes de poder "dudar".
 
-**Día 1 — tiempos verificados (total ~100 s).** Todo instantáneo salvo: cuencas
-principales 5 s, tres paneles 18 s, exponente de incertidumbre 18 s, Ejercicio 2
-22 s, tabla de convergencia 34 s.
+**Día 1 — tiempo total de ejecución: ~1.5 s** (antes ~100 s), porque ya no hay
+mapas de cuencas.
 
 **Día 2 — Feigenbaum.** Se usan **ciclos superestables** ($f^{2^n}(0.5) = 0.5$,
 resuelto por bisección) en vez de los puntos de bifurcación: es numéricamente
