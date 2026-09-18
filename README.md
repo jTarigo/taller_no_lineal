@@ -43,50 +43,54 @@ Están escritas dentro de cada cuaderno, pero conviene proyectarlas al empezar:
    controles, pero al cerrar la pestaña se pierde todo.
 3. **Entorno de ejecución → Ejecutar todas**.
 4. Si aparece *"Este cuaderno no lo creó Google"* → **Ejecutar de todos modos**.
-5. Esperar: la primera celda se toma unos segundos a propósito.
+5. Esperar unos segundos: la primera celda no instala nada, sólo carga las
+   herramientas y compila los integradores.
 
 **Requisito real:** una cuenta de Google. Conviene avisarlo en la convocatoria.
 
-**El problema del "Ejecutar todas", y cómo está mitigado.** Las figuras
-interactivas las dibuja un módulo (jupyter-matplotlib) que el navegador **baja de
-internet**, y Colab sólo lo pide cuando aparece la primera figura de ese tipo. En un
-"Ejecutar todas", las primeras figuras se dibujan antes de que termine esa descarga
-y salen mudas.
+**El "Ejecutar todas" anda de una, y esto costó dos arreglos.**
 
-Ojo con un detalle que me costó: mostrar un widget común (una etiqueta, un
-deslizador) **no** dispara esa descarga, porque Colab tiene su propio manejador
-para los widgets básicos. Hay que mostrar una figura de verdad. Por eso la celda de
-preparación dibuja un cartelito chico ("si ves este cartel, las figuras
-interactivas andan") y después espera ocho segundos: eso fuerza la descarga y le da
-tiempo antes de que aparezca la primera figura en serio.
+*Uno: se sacó ipympl.* Los cuadernos lo usaban para que las figuras respondieran al
+mouse. Colab no siempre lo trae, así que la celda de preparación lo instalaba con
+pip y cambiaba el backend de matplotlib en caliente — algo que en Colab exige
+reiniciar el entorno, con lo cual había que ejecutar todo dos veces. Y encima el
+módulo que dibuja esas figuras (jupyter-matplotlib) lo baja el navegador de
+internet, así que las primeras figuras de un "Ejecutar todas" salían mudas.
 
-Si igual alguna figura sale vacía o sin controles: volver a ejecutar esa celda con
-Shift+Enter. Si pasa en varias, ejecutar todo una segunda vez arregla todas de una
-(la segunda pasada tarda un par de segundos, porque ya está todo compilado).
+Ahora cada figura se dibuja con matplotlib de siempre, se pasa a PNG y se muestra
+adentro de un `ipywidgets.Image`, que es un widget básico y Colab lo dibuja sin
+bajar nada. Los deslizadores siguen siendo `ipywidgets` y siguen recalculando
+mientras se los arrastra: lo único que cambia es que, en vez de refrescarse el
+lienzo, se reemplaza la imagen. Medido: entre 20 y 130 ms por cuadro según la
+figura. Lo que se perdió a cambio es la lupa de la barra de herramientas, el click
+adentro de la figura y girar el 3D con el mouse; los dos lugares que usaban click
+y el atractor 3D ahora tienen deslizadores y botones, que además andan desde el
+celular, donde apuntar adentro de un gráfico era incómodo.
+
+*Dos: cada celda interactiva nombra sus cosas distinto.* Todas usaban `fig`, `ax`,
+`a1`, `a2`. Un cuaderno tiene un solo espacio de nombres, así que después de un
+"Ejecutar todas" el `fig` de cualquier celda era el de la última, y los
+deslizadores de las anteriores movían el gráfico equivocado, o ninguno. Se veía
+como figuras interactivas congeladas que revivían al reejecutar sólo esa celda.
+Ahora cada una usa `fig_lineal`, `fig_fases`, `fig_zoom`, y así. Como red de
+seguridad, `mostrar()` refresca además cualquier figura que matplotlib haya
+marcado como cambiada.
 
 ---
 
 ## 3. Lo que instala cada cuaderno
 
-Casi todo viene en Colab (numpy, scipy, matplotlib, ipywidgets, numba). La
-excepción es **ipympl**, que es lo que hace que las figuras respondan al mouse.
-Ojo con esto:
+**Nada.** numpy, scipy, matplotlib, ipywidgets y numba ya vienen en Colab, y no se
+usa nada más. La celda de preparación sólo importa, fija cuatro `rcParams` y define
+`lienzo()` y `mostrar()`: no corre pip, no toca el backend de matplotlib y no
+espera a que se baje nada de internet.
 
-- **algunas máquinas de Colab lo traen y otras no.** Verificado en dos sesiones del
-  mismo día: en una estaba instalado, en la otra no.
-- Si falta, la celda de preparación lo instala sola (primero con `--no-deps`, para
-  no mover el resto del entorno; si así no queda importable, reintenta normal).
-- Hay un bug de Colab que rechaza el backend de ipympl aunque esté instalado,
-  porque arma su lista de backends al arrancar, antes de que ipympl exista. La
-  celda de preparación desactiva ese control (`rcParams.validate["backend"]`)
-  **antes** de importar ipympl, que es la parte importante: ipympl se pone de
-  backend apenas se lo importa, así que el permiso tiene que estar dado antes.
-- Si todo eso falla, el cuaderno no se cae: avisa y las figuras quedan fijas en los
-  valores por defecto.
+Sin numba los cuadernos andan igual: la celda de preparación define un `njit` de
+mentira que no compila nada, y los deslizadores pesados se arrastran un poco.
 
-Ese orden (parche → instalar → importar → widget manager → pedir backend →
-verificar con `get_backend()`) está igual en los tres cuadernos. Si hay que
-tocarlo, hay que tocarlo en los tres.
+Las tres celdas de preparación son casi iguales (`lienzo`, `_imagen`, `_refrescar`,
+`mostrar`, y después lo propio de cada día). Si hay que tocar eso, hay que tocarlo
+en los tres.
 
 ---
 
@@ -108,9 +112,8 @@ congreso, el taller sigue.
 - [ ] Versiones estáticas subidas y linkeadas
 - [ ] Pendrive con los `.ipynb` y los HTML
 - [ ] Probar el link desde el wifi del congreso, no desde casa
-- [ ] Abrir un cuaderno 10 minutos antes: verificar que ipympl arranque en esa
-      máquina de Colab y que aparezca el cartelito de la celda de preparación
-- [ ] Decir en voz alta: si una figura sale vacía, se reejecuta esa celda
+- [ ] Abrir un cuaderno 10 minutos antes: *Ejecutar todas* y verificar que las
+      figuras aparezcan y que los deslizadores respondan
 - [ ] Día 2: la parte de la calculadora va **antes** de abrir el cuaderno
 - [ ] Día 3: tener a mano los circuitos (Chua y el tipo Duffing) para la conexión
       del Ejercicio 2
@@ -124,9 +127,19 @@ documentadas por si hay que retocar algo.
 
 ### Generales
 
-**Deslizadores continuos.** Todos usan `continuous_update=True` y las figuras
-actualizan los datos de las curvas (`set_data`) en vez de redibujarse enteras. Eso
-es lo que las hace fluidas; volver a crear la figura en cada evento no alcanza.
+**Deslizadores continuos.** Todos usan `continuous_update=True` y los callbacks
+actualizan los datos de las curvas (`set_data`) en vez de rearmar la figura. Eso
+sigue importando: volver a crear los artistas en cada evento es varias veces más
+caro que rasterizar de nuevo los que ya están.
+
+**Cómo llega la figura a la pantalla.** `mostrar(fig, *controles)` guarda la figura
+junto a un `ipywidgets.Image`, muestra los controles arriba y reemplaza
+`fig.canvas.draw_idle` por una función que vuelve a generar el PNG. Las celdas no
+se enteran: siguen terminando en `fig.canvas.draw_idle()` como si hubiera un
+backend interactivo. Dos detalles que no son obvios: `savefig` deja la figura
+marcada como *stale*, así que `_imagen()` la apaga a mano (sin eso, "refrescar sólo
+las que cambiaron" refresca todas); y `view_init`, el giro del 3D, no marca nada
+como cambiado, por eso `_refrescar` siempre rehace la figura que se lo pidió.
 
 **numba.** Los integradores van compilados. Medido en Colab: 15 trayectorias del
 péndulo magnético de 200 unidades de tiempo tardan 100–200 ms compiladas, contra
@@ -159,9 +172,10 @@ texto habla del error de la trayectoria, que es el que da 16 limpio.
 de fases. El cierre menciona en una línea que el péndulo forzado también es
 caótico, sin hacerlo.
 
-**Espacio de fases.** Las trayectorias se agregan haciendo click sobre la figura
-(requiere ipympl). Se dibujan además la separatriz y los equilibrios. El deslizador
-de rozamiento recalcula todas las trayectorias que haya puestas.
+**Espacio de fases.** Las trayectorias se agregan eligiendo (θ₀, ω₀) con dos
+deslizadores —un círculo rojo marca el estado elegido— y apretando "soltar". Se
+dibujan además la separatriz y los equilibrios. El deslizador de rozamiento
+recalcula todas las trayectorias que haya puestas.
 
 **Péndulo magnético: 6 imanes.** Hexágono de radio 1, `k = 0.5`, `d = 0.25`. El
 punto de partida de las quince sueltas es **(0.310096746049, −1.40)**, que está
