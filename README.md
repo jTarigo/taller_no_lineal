@@ -1,230 +1,258 @@
 # Taller: Física no lineal en el aula — parte numérica
 
-Cuadernos interactivos para un taller de tres días en un congreso de profesores
-de física de secundaria. Los participantes **no instalan nada**: abren un link.
+Cuadernos interactivos para un taller de tres días en un congreso de profesores de
+física de secundaria. Los participantes no instalan nada: abren un link.
 
 | Día | Cuaderno | Contenido |
 |---|---|---|
-| 1 | `Dia1_Pendulos_NoLineal.ipynb` | Péndulo lineal y exacto, espacio de fases, péndulo magnético, sensibilidad a condiciones iniciales |
-| 2 | `Dia2_MapaLogistico.ipynb` | Mapa logístico, telaraña, diagrama de bifurcación, constante de Feigenbaum |
-| 3 | `Dia3_Lorenz.ipynb` | Sistema de Lorenz, atractor extraño, exponente de Lyapunov, mapa de retorno |
+| 1 | `Dia1_Pendulos_NoLineal.ipynb` | Péndulo lineal y exacto, Euler contra RK4, período por integral elíptica, espacio de fases, péndulo magnético de 6 imanes |
+| 2 | `Dia2_MapaLogistico.ipynb` | De dónde sale el mapa logístico, telaraña, diagrama de bifurcación con zoom, constante de Feigenbaum a mano y con un algoritmo, universalidad, ventana de período 3 |
+| 3 | `Dia3_Lorenz.ipynb` | La historia de Lorenz, el atractor, exponente de Lyapunov, el mapa escondido, reconstrucción de Takens para los circuitos |
+
+La carpeta `figuras/` tiene el script que genera los diagramas estáticos del Día 1
+(fuerzas, Euler, RK4, péndulo magnético). Los PNG están incrustados en el cuaderno
+como datos, así que el cuaderno anda solo: la carpeta es sólo para poder editarlos
+y volver a generarlos.
 
 ---
 
-## 1. Publicar los cuadernos (lo que hace el docente, una vez)
+## 1. Cómo se publican (lo que hace el docente, una vez)
 
-### Paso 1 — subir a GitHub
+**Subir a GitHub.** Un repositorio público con los `.ipynb` adentro. No hace falta
+línea de comandos: la interfaz web permite arrastrar los archivos con
+*Add file → Upload files*.
 
-Crear un repositorio público (por ejemplo `taller-no-lineal`) y subir los `.ipynb`.
-No hace falta usar la línea de comandos: la interfaz web de GitHub permite arrastrar
-los archivos con *Add file → Upload files*.
-
-### Paso 2 — armar el link de Colab
-
-El formato es directo:
+**Armar el link de Colab.** El formato es directo:
 
 ```
-https://colab.research.google.com/github/USUARIO/REPO/blob/main/colab/Dia1_Pendulos_NoLineal.ipynb
+https://colab.research.google.com/github/USUARIO/REPO/blob/main/Dia1_Pendulos_NoLineal.ipynb
 ```
 
-Reemplazar `USUARIO/REPO`. Ese link abre el cuaderno en Colab, listo para usar.
-
-### Paso 3 — acortar el link
-
-Un link de Colab es largo e imposible de dictar. Conviene acortarlo
-(bit.ly, tinyurl, o `is.gd`) y proyectar **el link corto**, además de escribirlo
-en el pizarrón. Ideal: `bit.ly/nolineal-dia1`.
-
-### Paso 4 (opcional) — badge en el README del repo
-
-```markdown
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USUARIO/REPO/blob/main/colab/Dia1_Pendulos_NoLineal.ipynb)
-```
+**Acortarlo.** Un link de Colab es imposible de dictar. Conviene acortarlo
+(bit.ly, tinyurl, is.gd) y proyectar el link corto además de escribirlo en el
+pizarrón. Algo tipo `bit.ly/nolineal-dia1`.
 
 ---
 
 ## 2. Las instrucciones para los participantes
 
-Éstas ya están escritas dentro de cada cuaderno, pero conviene proyectarlas al
-empezar:
+Están escritas dentro de cada cuaderno, pero conviene proyectarlas al empezar:
 
 1. Abrir el link.
-2. Arriba a la derecha: **"Copiar en Drive"**.
-   ⚠️ Sin este paso pueden mirar pero **no guardar** sus cambios.
-3. Menú: **Entorno de ejecución → Ejecutar todas**.
-4. Si aparece *"Este cuaderno no lo creó Google"* → **"Ejecutar de todos modos"**.
-5. Esperar ~20 segundos.
+2. Arriba a la derecha: **Copiar en Drive**. Sin ese paso pueden mirar y mover
+   controles, pero al cerrar la pestaña se pierde todo.
+3. **Entorno de ejecución → Ejecutar todas**.
+4. Si aparece *"Este cuaderno no lo creó Google"* → **Ejecutar de todos modos**.
+5. Esperar: la primera celda se toma unos segundos a propósito.
 
-**Requisito real:** una cuenta de Google. La mayoría de los docentes ya tiene una,
-pero conviene avisarlo en la convocatoria del taller para que nadie llegue sin ella.
+**Requisito real:** una cuenta de Google. Conviene avisarlo en la convocatoria.
 
-**No hay ningún `pip install`.** Los cuadernos usan sólo numpy, scipy, matplotlib
-e ipywidgets, que Colab ya trae. El arranque es inmediato.
+**El problema del "Ejecutar todas", y cómo está mitigado.** Las figuras
+interactivas las dibuja un módulo (jupyter-matplotlib) que el navegador **baja de
+internet**, y Colab sólo lo pide cuando aparece la primera figura de ese tipo. En un
+"Ejecutar todas", las primeras figuras se dibujan antes de que termine esa descarga
+y salen mudas.
 
----
+Ojo con un detalle que me costó: mostrar un widget común (una etiqueta, un
+deslizador) **no** dispara esa descarga, porque Colab tiene su propio manejador
+para los widgets básicos. Hay que mostrar una figura de verdad. Por eso la celda de
+preparación dibuja un cartelito chico ("si ves este cartel, las figuras
+interactivas andan") y después espera ocho segundos: eso fuerza la descarga y le da
+tiempo antes de que aparezca la primera figura en serio.
 
-## 3. La regla de oro de Colab
-
-Éste es el punto flojo de Jupyter/Colab frente a un cuaderno reactivo, y conviene
-anticiparlo:
-
-> **Las celdas se ejecutan en orden, de arriba hacia abajo.**
-> Si algo da un error raro, casi siempre es porque se salteó una celda.
-> Solución universal: *Entorno de ejecución → Reiniciar y ejecutar todo*.
-
-Mitigaciones ya incluidas en los cuadernos:
-- la regla está destacada en la introducción de cada uno;
-- todos los deslizadores usan `continuous_update=False`, así no recalculan
-  mientras se arrastra;
-- las celdas que hay que editar están marcadas con `←←←` y dicen exactamente qué
-  número cambiar.
+Si igual alguna figura sale vacía o sin controles: volver a ejecutar esa celda con
+Shift+Enter. Si pasa en varias, ejecutar todo una segunda vez arregla todas de una
+(la segunda pasada tarda un par de segundos, porque ya está todo compilado).
 
 ---
 
-## 4. Alternativa: marimo (si sobra tiempo antes del congreso)
+## 3. Lo que instala cada cuaderno
 
-**marimo** es a Python lo que Pluto es a Julia: un cuaderno **reactivo**, sin
-estado oculto. Cambiar un valor recalcula sola todo lo que dependa de él, así que
-el problema del orden de las celdas simplemente no existe.
+Casi todo viene en Colab (numpy, scipy, matplotlib, ipywidgets, numba). La
+excepción es **ipympl**, que es lo que hace que las figuras respondan al mouse.
+Ojo con esto:
 
-Lo interesante es cómo se entrega:
+- **algunas máquinas de Colab lo traen y otras no.** Verificado en dos sesiones del
+  mismo día: en una estaba instalado, en la otra no.
+- Si falta, la celda de preparación lo instala sola (primero con `--no-deps`, para
+  no mover el resto del entorno; si así no queda importable, reintenta normal).
+- Hay un bug de Colab que rechaza el backend de ipympl aunque esté instalado,
+  porque arma su lista de backends al arrancar, antes de que ipympl exista. La
+  celda de preparación desactiva ese control (`rcParams.validate["backend"]`)
+  **antes** de importar ipympl, que es la parte importante: ipympl se pone de
+  backend apenas se lo importa, así que el permiso tiene que estar dado antes.
+- Si todo eso falla, el cuaderno no se cae: avisa y las figuras quedan fijas en los
+  valores por defecto.
 
-```bash
-pip install marimo
-marimo edit notebook.py                                   # editar
-marimo export html-wasm notebook.py -o sitio/ --mode run  # exportar
-```
-
-El export produce un HTML autocontenido que corre **Python entero dentro del
-navegador** (vía Pyodide). Se sube a GitHub Pages y listo: **sin cuenta de Google,
-sin servidor, sin esperar que arranque nada.** Un link y anda.
-
-**Dos advertencias honestas:**
-
-- Pyodide es bastante más lento que CPython. Los mapas de cuencas del Día 1 tardan
-  ~17 s en Colab; en WASM podrían ser 1–2 minutos. Habría que bajar la resolución
-  a N=60–80.
-- El HTML **debe servirse por HTTP**; no funciona abriéndolo como `file://`. O sea
-  que igual hace falta GitHub Pages o similar.
-
-**Recomendación:** Colab como opción principal (robusto, conocido, y los docentes
-ya tienen cuenta de Google). marimo como respaldo que no depende de que Google
-ande, si hay tiempo de prepararlo.
+Ese orden (parche → instalar → importar → widget manager → pedir backend →
+verificar con `get_backend()`) está igual en los tres cuadernos. Si hay que
+tocarlo, hay que tocarlo en los tres.
 
 ---
 
-## 5. Plan B (obligatorio)
+## 4. Plan B (obligatorio)
 
-Antes del taller, en cada cuaderno: *Archivo → Descargar → .ipynb* y también
-guardar una copia ejecutada como HTML/PDF. Subirlo a GitHub Pages y llevarlo en
-un pendrive.
+Antes del taller, en cada cuaderno: *Archivo → Descargar → .ipynb*, y también una
+copia ejecutada en HTML o PDF. Subirlo a GitHub Pages y llevarlo en un pendrive.
 
-No es interactivo, pero tiene todas las figuras y todo el texto. **Si se cae el
-wifi del congreso, el taller sigue.**
+La versión estática no es interactiva y las figuras quedan en sus valores por
+defecto, pero tiene todas las figuras y todo el texto. Si se cae el wifi del
+congreso, el taller sigue.
 
 ---
 
-## 6. Checklist del día
+## 5. Checklist del día
 
-- [ ] Link corto proyectado **y** escrito en el pizarrón
+- [ ] Link corto proyectado y escrito en el pizarrón
 - [ ] Avisar en la convocatoria que hace falta cuenta de Google
 - [ ] Versiones estáticas subidas y linkeadas
 - [ ] Pendrive con los `.ipynb` y los HTML
 - [ ] Probar el link desde el wifi del congreso, no desde casa
-- [ ] Abrir un cuaderno 10 minutos antes para verificar que todo responde
-- [ ] Para el Día 2: recordarles que traigan **calculadora** (o el celular)
+- [ ] Abrir un cuaderno 10 minutos antes: verificar que ipympl arranque en esa
+      máquina de Colab y que aparezca el cartelito de la celda de preparación
+- [ ] Decir en voz alta: si una figura sale vacía, se reejecuta esa celda
+- [ ] Día 2: la parte de la calculadora va **antes** de abrir el cuaderno
+- [ ] Día 3: tener a mano los circuitos (Chua y el tipo Duffing) para la conexión
+      del Ejercicio 2
 
 ---
 
 ## Notas técnicas sobre el contenido
 
-Estas decisiones se tomaron después de verificar numéricamente los resultados;
-quedan documentadas por si hay que retocar algo.
+Decisiones tomadas después de verificar los resultados numéricamente. Quedan
+documentadas por si hay que retocar algo.
 
-**Día 1 — alcance.** El cuaderno termina en la sensibilidad a las condiciones
-iniciales (sección 6.1). Se quitaron los mapas de cuencas, los paneles de
-rozamiento, el exponente de incertidumbre y el experimento de paso de integración.
+### Generales
 
-**Día 1 — fluidez de los deslizadores.** Costos medidos por movimiento:
+**Deslizadores continuos.** Todos usan `continuous_update=True` y las figuras
+actualizan los datos de las curvas (`set_data`) en vez de redibujarse enteras. Eso
+es lo que las hace fluidas; volver a crear la figura en cada evento no alcanza.
 
-| | antes | ahora |
+**numba.** Los integradores van compilados. Medido en Colab: 15 trayectorias del
+péndulo magnético de 200 unidades de tiempo tardan 100–200 ms compiladas, contra
+unos 2 s en Python puro. Sin numba los cuadernos funcionan igual, sólo que los
+deslizadores pesados se arrastran.
+
+**Celdas plegadas.** El código de dibujo y de widgets está en celdas-formulario de
+Colab (`#@title ... {display-mode: "form"}` más `"cellView": "form"` en los
+metadatos), que se abren con doble click. La física siempre queda a la vista.
+
+**Diagramas estáticos.** Los cuatro diagramas del Día 1 van incrustados como data
+URI en las celdas de texto: se ven sin ejecutar nada y sobreviven al PDF.
+
+### Día 1
+
+**Euler contra RK4.** Sección nueva. Números verificados, con θ₀ = 90° y 10 s:
+
+| dt | error de energía, Euler | RK4 |
 |---|---|---|
-| Sección 5, tmax=40 (default) | ~1.0 s | **0.042 s** |
-| Sección 5, tmax=150 (máximo) | ~2.7 s | **0.14 s** |
-| Sección 6.1, b=0.10 (default) | ~3.0 s | **0.15 s** |
-| Sección 6.1, b=0.30 | ~3.0 s | **0.057 s** |
+| 0.02 | 120 % (se escapa y da vueltas) | 2·10⁻⁷ |
+| 0.005 | 34 % (espiral visible) | 1·10⁻¹⁰ |
+| 0.001 | 6.6 % | 1·10⁻¹³ |
 
-Tres cambios lo consiguen:
+El orden se verificó contra una referencia fina, comparando a igual tiempo final:
+Euler divide el error por 2 al partir el paso al medio, RK4 por 16. Ojo que el
+error de *energía* de RK4 cae más rápido que eso (factores de 30 a 45), así que el
+texto habla del error de la trayectoria, que es el que da 16 limpio.
 
-1. **Sección 5 vectorizada.** `rk4_varias()` integra las 6 trayectorias juntas en
-   un array (2,6) en vez de 6 bucles separados.
-2. **Paso dt = 0.03** en el retrato de fases. Verificado con conservación de
-   energía (b=0, A=0, tmax=150): deriva relativa 2.0×10⁻⁵, invisible al dibujar.
-   El test de "error contra dt pequeño" NO sirve en régimen caótico — da
-   resultados no monótonos porque las trayectorias divergen por definición; la
-   conservación de energía es el criterio correcto. El tope del deslizador de
-   tiempo bajó de 200 s a 150 s.
-3. **Sección 6.1 con aritmética escalar y corte temprano.** Las funciones
-   `paso_iman` / `soltar_dos` usan floats sueltos en vez de arrays de numpy: para
-   dos trayectorias es **20× más rápido** (numpy tiene un costo fijo por operación
-   que sólo se amortiza con miles de datos). Además la integración corta apenas
-   ambos péndulos se detuvieron, en vez de llegar siempre a los 500 s.
+**Se sacó el forzado.** Ya no están `A` ni `Ω`, ni en la ecuación ni en el espacio
+de fases. El cierre menciona en una línea que el péndulo forzado también es
+caótico, sin hacerlo.
 
-**Día 1 — la física no cambió con las optimizaciones.** Verificado tras los
-cambios: el punto (0.30, −1.40) con b=0.10 sigue cambiando de imán en las **seis**
-escalas de δ (10⁻¹ a 10⁻⁶); el control cerca de un imán (0, 1) sigue siendo
-estable en las tres escalas probadas; con b=0.20 la sensibilidad desaparece (6/6
-coinciden); el período elíptico sigue coincidiendo con el medido con error 10⁻¹¹.
+**Espacio de fases.** Las trayectorias se agregan haciendo click sobre la figura
+(requiere ipympl). Se dibujan además la separatriz y los equilibrios. El deslizador
+de rozamiento recalcula todas las trayectorias que haya puestas.
 
-**Día 1 — condición inicial de la sección 6.1.** Con b = 0.20 los únicos puntos
-sensibles hasta δ=10⁻⁶ sobre la grilla del deslizador (paso 0.05) caen en x = 0,
-que es eje de simetría y por lo tanto degenerado. Se usa **(0.30, −1.40) con
-b = 0.10**. La sección tiene un deslizador de rozamiento para mostrar que con
-b = 0.30 la sensibilidad desaparece: el péndulo se frena antes de poder "dudar".
+**Péndulo magnético: 6 imanes.** Hexágono de radio 1, `k = 0.5`, `d = 0.25`. El
+punto de partida de las quince sueltas es **(0.310096746049, −1.40)**, que está
+sobre el borde entre dos cuencas y lo encontré por bisección con `b = 0.10`. Los
+péndulos se sueltan repartidos sobre un segmento de largo δ centrado en ese punto.
+Verificado con esa configuración:
 
-**Día 1 — tiempo total de ejecución: ~1.5 s** (antes ~100 s), porque ya no hay
-mapas de cuencas.
+| δ | imanes distintos (15 sueltas) |
+|---|---|
+| 10⁻¹ | 5 |
+| 10⁻² | 6 |
+| 10⁻³ | 6 |
+| 10⁻⁴ | 2 |
+| 10⁻⁵ | 3 |
+| 10⁻⁶ | 2 |
 
-**Día 2 — Feigenbaum.** Se usan **ciclos superestables** ($f^{2^n}(0.5) = 0.5$,
-resuelto por bisección) en vez de los puntos de bifurcación: es numéricamente
-mucho más estable y el método es elemental. Las ventanas de búsqueda se calculan
-solas usando la propia escala 4.669. Converge hasta período 512 dando
-δ = 4.669191 (error 10⁻⁵). Más allá de n=9 falla por redondeo de punto flotante,
-y eso está explicado en el cuaderno como tema de discusión, no escondido.
+Con `b = 0.20` o más, las quince caen juntas en el mismo imán: el punto deja de
+estar sobre un borde y además el péndulo se frena antes de deambular. La
+integración corta apenas el péndulo se detuvo (ahorra ~30 % de los pasos) y se
+verificó que el corte no cambia ningún destino.
 
-**Día 2 — universalidad.** Verificado con el mapa seno `r·sin(πx)`: los $R_n$ son
-completamente distintos (0.777, 0.846, 0.861...) pero δ converge a 4.669151. El
-rango de búsqueda de `r` se detecta automáticamente, así que el ejercicio funciona
-descomentando una sola línea.
+### Día 2
 
-**Día 2 — chequeos.** Punto fijo en r=2.8 coincide con 1−1/r exacto; períodos 2, 4
-y 3 detectados en r=3.2, 3.5 y 3.83; exponente de Lyapunov en r=4 da 0.693149
-contra ln2 = 0.693147.
+**Se sacó el método de ciclos superestables.** Queda mencionado en una línea como
+la forma de llegar a los seis decimales.
 
-**Día 3 — paso de integración.** Verificado que `dt = 0.005` converge: de ahí para
-abajo la posición a t=10 ya no cambia. Con `dt = 0.02` hay error visible (3.7×10⁻²).
-El cuaderno muestra esta comparación explícitamente, como hábito de trabajo.
+**Feigenbaum a mano.** El diagrama de bifurcación tiene cuatro deslizadores
+desde/hasta, el diagrama completo al lado con un recuadro, cinco botones de atajo y
+una raya punteada en el centro de la ventana con su valor de `r` en el título:
+medir una bifurcación es centrarla y leer. Con 3 decimales se obtiene δ ≈ 4.73 y
+4.75; con 2 decimales, 5.0 y 4.5.
 
-**Día 3 — Lyapunov.** Algoritmo de Benettin con renormalización cada paso. La
-implementación es **escalar** (x, y, z como floats sueltos en vez de un array de
-numpy de 3 elementos): da el mismo resultado y es ~60 veces más rápida — 0.5 s en
-vez de 32 s para tmax=1000. Converge a λ ≈ 0.90 contra el ≈0.9056 de la
-literatura. Dos controles incluidos: ρ=13 da λ negativo, y el resultado no cambia
-con el paso de integración.
+**El algoritmo.** Contar el período (tras 20000 iteraciones de transitorio,
+tolerancia 10⁻⁸) más bisección sobre `r`. Resultados verificados:
 
-**Día 3 — clasificación de regímenes.** Ojo con una diferencia respecto del Día 2:
-en un **flujo continuo** una órbita periódica da λ ≈ 0, no λ < 0, porque existe la
-dirección a lo largo de la trayectoria. Sólo los puntos fijos dan λ netamente
-negativo. El clasificador del Ejercicio 1 distingue los tres casos y el cuaderno
-explica la sutileza.
+| | δ₁ | δ₂ | δ₃ | δ₄ |
+|---|---|---|---|---|
+| detectado | 4.748 | 4.649 | 4.654 | 4.642 |
+| exacto | 4.751 | 4.656 | 4.668 | 4.669 |
 
-**Día 3 — rangos verificados para el Ejercicio 1.** ρ = 13 → −0.44 (punto fijo);
-23 → −0.055; 24 → +0.76 (transición brusca); 28 → +0.90; 45 → +1.22 (sigue
-caótico); 100 y 160 → ≈0 (ciclo límite). Cuidado: ρ = 40–50 **siguen** siendo
-caóticos, la vuelta al orden llega mucho más arriba.
+El sesgo es sistemático y está explicado en el cuaderno: cerca de la bifurcación el
+transitorio se vuelve lentísimo, queda un temblor por encima de la tolerancia y el
+detector declara la bifurcación antes de tiempo. Se achica subiendo `n_trans`.
 
-**Día 3 — mapa de máximos.** Los picos de z(t) se afinan con interpolación
-parabólica sobre los tres puntos vecinos. Con el transitorio descartado, la
-relación z_(n+1) vs z_n tiene grosor de 1.1 % de su extensión: es una curva, no
-una nube. La pendiente típica |f'| ≈ 1.65 > 1 explica el caos en el lenguaje del
-Día 2 y cierra los tres días.
+**La ventana de búsqueda importa.** Los dos primeros `r_n` se buscan en todo el
+rango; de ahí en más, en `[r_n, r_n + 0.4·hueco anterior]`. Con ventanas más
+grandes la bisección se cuelga en las ventanas periódicas del caos (una ventana de
+período 3 tiene período ≤ 4 y confunde el criterio "todavía no bifurcó").
+
+**Mapa seno.** `r·sin(πx)` con `r ∈ (0, 1]`. Bifurcaciones en 0.7198, 0.8332,
+0.8586, 0.8641: nada que ver con las del logístico. δ detectados: 4.47, 4.62, 4.65.
+
+**Dibujo por densidad.** Los diagramas se arman contando cuántas veces cae la
+órbita en cada casillero (`bincount`) y se muestran con `imshow` e interpolación
+`antialiased`, con `vmax` en el percentil 90 y raíz cuadrada de las cuentas. Son
+unos 20 ms por cuadro contra varios cientos dibujando medio millón de puntos, y
+además se ve mejor.
+
+### Día 3
+
+**La historia va primero.** LGP-30, el modelo de 12 ecuaciones, 0.506 contra
+0.506127, el café, Saltzman, Ellen Fetter, la charla de la mariposa de 1972 y el
+título de Merilees. Recién después las ecuaciones.
+
+**Se sacó la verificación del paso de integración** y la referencia al Día 1 que ya
+no existía. En su lugar hay un aparte opcional sobre **sombreado** (*shadowing*):
+por qué la trayectoria calculada no es la verdadera pero sirve igual, y dónde está
+el límite (no sirve como pronóstico).
+
+**Lyapunov.** Benettin, con renormalización cada paso, marcado como opcional y con
+el código plegado. Verificado: converge a λ ≈ 0.90 (0.92 a t = 100, 0.916 a
+t = 300); ρ = 13 da −0.45; ρ = 45 da +1.21 (sigue caótico); ρ = 100 y 160 dan ≈ 0
+(ciclo límite); el resultado no cambia con dt = 0.002.
+
+**Se sacó la observación sobre el Día 2** (la diferencia entre mapas y flujos
+continuos para λ de órbitas periódicas). El clasificador del Ejercicio 1 sigue
+distinguiendo los tres casos.
+
+**Mapa de retorno.** Máximos de z afinados con interpolación parabólica. Grosor
+típico 1.0 % de la extensión y pendiente |f'| ≈ 1.62. Sección marcada como
+opcional.
+
+**Ejercicio 2 corregido.** La versión anterior reconstruía con `z(t)` y afirmaba
+que era equivalente al atractor. Es falso: z no distingue las dos alas, porque el
+sistema es simétrico ante (x, y) → (−x, −y), y la reconstrucción las superpone en
+un solo lóbulo. Ahora el ejercicio usa `x(t)`, que sí da la mariposa, y tiene un
+selector para ver el caso de z como advertencia práctica: **qué variable se mide
+importa**. Los tres paneles son la señal cruda, el modo XY con dos canales y la
+reconstrucción con retardo, que es exactamente la situación de los circuitos de
+Chua y Duffing con el osciloscopio.
+
+**Cierre.** Figura de resumen con los tres sistemas del taller lado a lado
+(espacio de fases, diagrama de bifurcación, atractor), tabla corregida y las tres
+ideas.
